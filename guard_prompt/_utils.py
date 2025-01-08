@@ -1,16 +1,10 @@
 import asyncio
 import threading
+from collections.abc import AsyncGenerator, Coroutine, Generator, Sequence
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any
-from typing import TypeVar
-from typing import Union
-from collections.abc import Sequence
-from collections.abc import Coroutine
-from collections.abc import Generator
-from collections.abc import AsyncGenerator
+from typing import Any, TypeVar, Union
 
 from ._exceptions import NotSupportedResponseTypeError
-
 
 T = TypeVar("T")
 
@@ -31,6 +25,7 @@ def get_lcs(str1: str | Sequence[str], str2: str | Sequence[str]) -> int:
         int: the length of the longest common substring
 
     """
+
     def format_param(param: str | Sequence[str]) -> list[str]:
         if isinstance(param, str):
             return list(param)
@@ -65,7 +60,6 @@ def get_lcs(str1: str | Sequence[str], str2: str | Sequence[str]) -> int:
     return max_length
 
 
-
 def run_coroutine_sync(coroutine: Coroutine[Any, Any, T], timeout: float = 30) -> T:
     """
     run coroutine on sync function.
@@ -73,6 +67,7 @@ def run_coroutine_sync(coroutine: Coroutine[Any, Any, T], timeout: float = 30) -
     by https://stackoverflow.com/a/78911765
 
     """
+
     def run_in_new_loop():
         new_loop = asyncio.new_event_loop()
         asyncio.set_event_loop(new_loop)
@@ -135,7 +130,7 @@ def generator_reader(
             if i + chunk_size >= len(data):
                 yield data[i:]
                 break
-            yield data[i:i + chunk_size]
+            yield data[i : i + chunk_size]
         raise StopIteration()
 
     else:
