@@ -5,15 +5,17 @@ import torch
 from torch.nn.functional import softmax
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
-# model_id = "meta-llama/Prompt-Guard-86M"
-DEFAULT_MODEL_PATH = f"{os.path.dirname(os.path.abspath(__file__))}/model"
-
 
 class PromptDetector:
     def __init__(
         self,
-        model_id_or_path: str = DEFAULT_MODEL_PATH,
+        model_id_or_path: str = "meta-llama/Prompt-Guard-86M",
     ) -> None:
+        """
+        Args:
+            model_id_or_path (str, optional):
+                Default model id or model local path.
+        """
         self.model_id_or_path = model_id_or_path
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_id_or_path)
         self.model = AutoModelForSequenceClassification.from_pretrained(
@@ -24,21 +26,26 @@ class PromptDetector:
         self,
         text: str,
         temperature: float = 1.0,
-        device: str = "cpu",
+        device: Literal["auto", "cpu", "cuda"] = "auto",
     ) -> tuple[float, float]:
         """
-        Evaluate the model on the given text with temperature-adjusted softmax.
-        Note, as this is a DeBERTa model, the input text should have a maximum length of 512.
+        Get the text's indirect_injection score and jailbreak score.
 
         Args:
-            text (str): The input text to classify.
-            temperature (float): The temperature for the softmax function. Default is 1.0.
-            device (str): The device to evaluate the model on.
+            text (str): The input text, the maximum length is less than 512
+
+            temperature (float): The temperature for the softmax function.
+            Default is 1.0.
+
+            device ("auto" | "cpu" | "cuda"): The device to evaluate the model on.
 
         Returns:
-            # torch.Tensor: The probability of each class adjusted by the temperature.
             tuple[float, float]: indirect_injection score, jailbreak score
+
         """
+        if device == "auto":
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+
         # Encode the text
         inputs = self.tokenizer(
             text=text,
@@ -101,9 +108,6 @@ class PromptDetector:
             idx += 256
 
             injection_score, jailbreak_score = self._get_score(text=short_text)
-            print("injection_score:", injection_score)
-            print("jailbreak_score:", jailbreak_score)
-            print()
             if jailbreak_score > threshold:
                 return False, "jailbreak"
             elif from_ == "indirect" and injection_score > threshold:
